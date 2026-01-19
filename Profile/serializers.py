@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework.authtoken.models import Token
-
+from django.contrib.auth.password_validation import validate_password
 User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -10,11 +10,40 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'full_name', 'phone_number', 'password', 'account_type']
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "phone_number",
+            "password",
+            "account_type",
+        ]
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "This email is already registered."
+            )
+        return value
+
+    def validate_phone_number(self, value):
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError(
+                "This phone number is already registered."
+            )
+        return value
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
 
     def create(self, validated_data):
-        validated_data['email'] = validated_data['email'].strip().lower()  # normalize
-        user = User.objects.create_user(**validated_data)
+        password = validated_data.pop("password")
+        user = User.objects.create_user(
+            password=password,
+            **validated_data
+        )
         Token.objects.create(user=user)
         return user
 

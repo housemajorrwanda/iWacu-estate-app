@@ -155,3 +155,5 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'housemajorrwanda@gmail.com'
 EMAIL_HOST_PASSWORD = 'kpxr khxv wjoy hprg'  # NOT your Gmail password!
 DEFAULT_FROM_EMAIL = 'House Major <housemajorrwanda@gmail.com>'
+CLERK_SECRET_KEY='sk_test_5SVQefJB8AwJ4C4WihplykRZenZBzQmNRCbCd1dc2I'
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY='pk_test_ZW5oYW5jZWQtd2hpcHBldC04NC5jbGVyay5hY2NvdW50cy5kZXYk'

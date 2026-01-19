@@ -14,6 +14,12 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.shortcuts import render
+from django.conf import settings
+from clerk_backend_api import Clerk
+from clerk_backend_api.security.types import AuthenticateRequestOptions
+#For Clerk authentication
+CLERK_SECRET_KEY = settings.CLERK_SECRET_KEY
+clerk_sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
 url='https://44550e797e53.ngrok-free.app/'
 User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
@@ -22,7 +28,8 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            token = Token.objects.get(user=user)
+            token, _ = Token.objects.get_or_create(user=user)
+
             return Response({'token': token.key}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -92,3 +99,62 @@ def reset_password_form(request, uidb64, token):
         "token": token
     }
     return render(request, "reset_password_form.html", context)
+
+
+class ClerkLoginView(APIView):
+    def post(self, request):
+        try:
+            # 🔐 Clerk reads Authorization header internally
+            request_state = clerk_sdk.authenticate_request(
+                request,
+                AuthenticateRequestOptions()
+            )
+
+            print("Clerk request state:", request_state)
+
+            if not request_state.is_signed_in:
+                return Response(
+                    {"detail": "Invalid or expired Clerk session"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            # ✅ Extract from payload
+            payload = request_state.payload
+            clerk_user_id = payload.get("sub")
+            clerk_user = clerk_sdk.users.get(user_id=clerk_user_id)
+
+            email = clerk_user.email_addresses[0].email_address
+            full_name = f"{clerk_user.first_name} {clerk_user.last_name}".strip()
+            image_url = clerk_user.image_url
+
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "full_name": full_name,
+                    # "phone_number": f"clerk-{clerk_user.id[:8]}",
+                    "account_type": "buyer",
+                    "profile_picture": image_url,
+                }
+            )
+
+            token, _ = Token.objects.get_or_create(user=user)
+
+            return Response({
+                "token": token.key,
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "image": image_url,
+                    "created": created,
+                }
+            })
+
+
+
+        except Exception as e:
+            print("❌ Clerk auth error:", str(e))
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )

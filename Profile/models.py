@@ -3,22 +3,32 @@ from django.db import models
 import uuid
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, phone_number, password=None, **extra_fields):
+    def create_user(self, email, phone_number, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
         if not phone_number:
             raise ValueError("Phone number is required")
-        if not extra_fields.get('full_name'):
+        if not extra_fields.get("full_name"):
             raise ValueError("Full name is required")
-        user = self.model(phone_number=phone_number, **extra_fields)
+
+        email = self.normalize_email(email)
+
+        user = self.model(
+            email=email,
+            phone_number=phone_number,
+            **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
     
-    def create_superuser(self, phone_number, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        if not extra_fields.get('full_name'):
-            extra_fields['full_name'] = "Admin User"
-        return self.create_user(phone_number, password, **extra_fields)
+    def create_superuser(self, email, phone_number, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("full_name", "Admin User")
+
+        return self.create_user(email, phone_number, password, **extra_fields)
+
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     ACCOUNT_TYPE_CHOICES = [
