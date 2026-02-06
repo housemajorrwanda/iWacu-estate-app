@@ -21,6 +21,7 @@ class AdditionalFeatures(models.Model):
     show_name_only=models.BooleanField(default=False)
     add_available_number=models.BooleanField(default=False)
     is_additional_image_required=models.BooleanField(default=False)
+    is_custom = models.BooleanField(default=False) # To identify user-defined features
     def __str__(self):
         return self.name
 # Hous Model
@@ -73,6 +74,7 @@ class HouseFeatureAssignment(models.Model):
     house = models.ForeignKey(House, on_delete=models.CASCADE, related_name='feature_assignments')
     feature = models.ForeignKey(AdditionalFeatures, on_delete=models.CASCADE, related_name='feature_assignments')
     available_number = models.CharField(max_length=20, blank=True, null=True)
+    custom_feature_name = models.CharField(max_length=255, blank=True, null=True) 
     def __str__(self):
         return f"{self.house.id} - {self.feature.name}"
 

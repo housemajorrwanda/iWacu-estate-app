@@ -1,6 +1,6 @@
 import django_filters
 from .models import House, AdditionalFeatures
-
+from django.db.models import Q
 
 class HouseFilter(django_filters.FilterSet):
     price_min = django_filters.NumberFilter(field_name="price", lookup_expr='gte')
@@ -8,6 +8,17 @@ class HouseFilter(django_filters.FilterSet):
     house_category = django_filters.UUIDFilter(field_name='house_category__id')
     payment_category = django_filters.CharFilter(field_name='payment_category')
     address = django_filters.CharFilter(field_name='address', lookup_expr='icontains')
+    
+    search = django_filters.CharFilter(method='filter_search')
+
+    def filter_search(self, queryset, name, value):
+        if value:
+            return queryset.filter(
+                Q(address__icontains=value) |
+                Q(description__icontains=value) |
+                Q(price__icontains=value)
+            )
+        return queryset
 
     features = django_filters.CharFilter(method='filter_by_features')
 

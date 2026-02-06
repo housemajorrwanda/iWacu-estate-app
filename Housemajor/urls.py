@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/auth/', include('Profile.urls')),
     path('reset-password/<uidb64>/<token>/', reset_password_form, name='reset_password_form'),
     path('reset-password-submit/<uidb64>/<token>/', reset_password, name='reset_password_submit'),
+    path('api/payment/', include('Payment.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
