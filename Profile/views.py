@@ -17,6 +17,7 @@ from django.shortcuts import render
 from django.conf import settings
 from clerk_backend_api import Clerk
 from clerk_backend_api.security.types import AuthenticateRequestOptions
+from rest_framework.generics import RetrieveUpdateAPIView
 #For Clerk authentication
 CLERK_SECRET_KEY = settings.CLERK_SECRET_KEY
 clerk_sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
@@ -43,11 +44,7 @@ class LoginView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_profile(request):
-    serializer = ProfileSerializer(request.user)  # reuse or create a ProfileSerializer
-    return Response(serializer.data)
+
 @api_view(['POST'])
 def forgot_password(request):
     email = request.data.get('email', '').strip().lower()
@@ -158,3 +155,9 @@ class ClerkLoginView(APIView):
                 {"detail": str(e)},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+class ProfileView(RetrieveUpdateAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user

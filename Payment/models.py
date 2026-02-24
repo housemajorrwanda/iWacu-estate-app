@@ -8,7 +8,7 @@ class Payments(models.Model):
         ('failed','failed'),
         ('completed','completed')
     )
-    user=models.ForeignKey(User,on_delete=models.CASCADE)
+    user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='transactions')
     amount=models.IntegerField()
     phone_number=models.CharField(max_length=14)
     payment_status=models.CharField(choices=payment_status_choices,max_length=40)

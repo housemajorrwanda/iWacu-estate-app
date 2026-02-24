@@ -72,7 +72,19 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'umuzylvc_housemajor',        # Database name
+        'USER': 'umuzylvc_admin',            # Database username
+        'PASSWORD': 'Ngoga@1patrick',    # Database password
+        'HOST': 'localhost',         # Or IP address of DB server
+        'PORT': '3306',              # Default MySQL port
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

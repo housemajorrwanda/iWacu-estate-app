@@ -43,36 +43,53 @@ class House(models.Model):
         ('Sell', 'For Sell')
     )
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False,unique=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     thumbnail = models.ImageField(upload_to='Houses/')
     house_category = models.ForeignKey(HouseCategory, on_delete=models.CASCADE)
     payment_category = models.CharField(choices=PAYMENT_CATEGORIES, max_length=30)
-    address = models.CharField(max_length=255)  # Human-readable
+    address = models.CharField(max_length=255)
+    agent=models.ForeignKey(Agent,on_delete=models.SET_NULL,related_name='houses',null=True,blank=True)
     latitude = models.DecimalField(max_digits=23, decimal_places=20, null=True, blank=True)
     longitude = models.DecimalField(max_digits=23, decimal_places=20, null=True, blank=True)
+
     price = models.IntegerField()
     description = models.TextField()
-    is_booked=models.BooleanField(default=False)
-    agent = models.ForeignKey(to=Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name='houses')
+
+    is_booked = models.BooleanField(default=False)
+
+    # ✅ NEW FIELD
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="uploaded_houses",
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
     house_features = models.ManyToManyField(
         to=AdditionalFeatures,
         through='HouseFeatureAssignment',
         related_name='houses'
     )
+    
 
     def __str__(self):
         return str(self.id)
-    def save(self, *args, **kwargs):
-        if self.agent is None:
-            User = get_user_model()
-            agent = User.objects.filter(is_staff=True).first()
-            self.agent = agent
-        super().save(*args, **kwargs)
+
 
 class HouseFeatureAssignment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False,unique=True)
     house = models.ForeignKey(House, on_delete=models.CASCADE, related_name='feature_assignments')
-    feature = models.ForeignKey(AdditionalFeatures, on_delete=models.CASCADE, related_name='feature_assignments')
+    # feature = models.ForeignKey(AdditionalFeatures, on_delete=models.CASCADE, related_name='feature_assignments')
+    feature = models.ForeignKey(
+    AdditionalFeatures,
+    on_delete=models.CASCADE,
+    related_name='feature_assignments',
+    null=True,
+    blank=True
+)
     available_number = models.CharField(max_length=20, blank=True, null=True)
     custom_feature_name = models.CharField(max_length=255, blank=True, null=True) 
     def __str__(self):

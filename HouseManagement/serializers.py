@@ -6,7 +6,7 @@ from .models import (
     House, HouseCategory, AdditionalFeatures, HouseFeatureAssignment,
     HouseFeatureImage, HouseImages, Proximity, Agent
 )
-
+from Profile.serializers import ProfileSerializer
 
 # --- Agent Serializer for creation ---
 class AgentSerializer(serializers.ModelSerializer):
@@ -65,10 +65,30 @@ class HouseSerializer(serializers.ModelSerializer):
     agent = AgentSerializer()
     feature_assignments = HouseFeatureAssignmentSerializer(many=True, required=False)
     house_images = HouseImagesSerializer(many=True, read_only=True)  # Add this
-
+    house_category_data = HouseCategorySerializer(source='house_category', read_only=True)  # Add this
+    uploader_data = ProfileSerializer(source='uploaded_by', read_only=True)
     class Meta:
         model = House
-        fields = "__all__"
+        fields = [
+            'id',
+            'thumbnail',
+            'house_category',
+            'house_category_data',
+            'payment_category',
+            'address',
+            'agent',
+            'latitude',
+            'longitude',
+            'price',
+            'description',
+            'is_booked',
+            'uploaded_by',
+            'uploader_data',
+            'created_at',
+            'house_features',
+            'feature_assignments',
+            'house_images'
+        ]
 
     def to_internal_value(self, data):
         # Your existing to_internal_value logic (unchanged)
@@ -92,7 +112,7 @@ class HouseSerializer(serializers.ModelSerializer):
                 index, field = feature_match.groups()
                 if index not in feature_map:
                     feature_map[index] = {"images": []}
-                if field in ["feature", "available_number"]:
+                if field in ["feature", "available_number", "custom_feature_name"]:
                     feature_map[index][field] = value
                 continue
 
@@ -129,15 +149,26 @@ class HouseSerializer(serializers.ModelSerializer):
         # Create feature assignments and their images
         for feature_data in features_data:
             images_data = feature_data.pop("images", [])
+
+            feature = feature_data.get("feature")
+            custom_name = feature_data.get("custom_feature_name")
+
+            # Safety check: one of them must exist
+            if not feature and not custom_name:
+                continue
+
             assignment = HouseFeatureAssignment.objects.create(
-                house=house, **feature_data
+                house=house,
+                feature=feature if feature else None,
+                available_number=feature_data.get("available_number"),
+                custom_feature_name=custom_name if custom_name else None
             )
+
             for img in images_data:
                 HouseFeatureImage.objects.create(
                     assignment=assignment,
                     image=img["image"]
                 )
-
         # Create additional house images
         request = self.context.get("request")
         if request:
