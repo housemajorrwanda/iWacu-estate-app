@@ -1,5 +1,6 @@
 import { prepareFormData } from "@/components/functions/uploadingHouse";
 import { url } from "@/url";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export interface houseCategory {
   id: string;
@@ -25,11 +26,13 @@ export interface HouseFeatureAssignment {
   available_number: string | null;
   images: string[];
   feature: FeatureInterface;
+  custom_feature_name: string;
 }
 export interface house {
   id: string;
   thumbnail: string;
   house_category: houseCategory;
+  house_category_data?: houseCategory;
   payment_category: string[];
   name: string;
   address: string;
@@ -58,11 +61,26 @@ export const HouseApi = createApi({
   reducerPath: "HouseApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${url}/api/`,
+    prepareHeaders: async (headers, { getState }) => {
+      const token = await AsyncStorage.getItem("token");
+      console.log("Token from AsyncStorage:", token); // Debugging log
+      if (token) {
+        headers.set("Authorization", `Token ${token}`);
+      }
+
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
-    getHouses: builder.query<any, void>({
-      query: () => "houses/",
+    getHouses: builder.query<any[], { house_category?: string | null; search?: string }>({
+      query: ({ house_category, search }) => {
+        const params = new URLSearchParams();
+        if (house_category) params.append("house_category", house_category);
+        if (search) params.append("search", search);
+        return `houses/?${params.toString()}`;
+      },
     }),
+
     getSingleHouse: builder.query<any, string, void>({
       query: (id) => `houses/${id}`,
     }),
@@ -76,15 +94,17 @@ export const HouseApi = createApi({
       query: () => "/features",
     }),
     uploadHouse: builder.mutation<void, any>({
-      query: (houseData:any) => {
+      query: (houseData: any) => {
         const formData = prepareFormData(houseData); // your existing function
+        console.log("Form Data",formData);
+        
         return {
           url: "houses/",
           method: "POST",
           body: formData,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          // headers: {
+          //   "Content-Type": "multipart/form-data",
+          // },
         };
       },
     }),

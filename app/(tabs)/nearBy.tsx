@@ -1,5 +1,10 @@
 import { HouseMarker } from "@/assets/images";
-import { color, smallIconSize, width } from "@/components/global";
+import {
+  color,
+  smallIconSize,
+  TAB_BAR_HEIGHT,
+  width,
+} from "@/components/global";
 import {
   house,
   HouseFeatureAssignment,
@@ -20,7 +25,9 @@ import {
 import MapView, { Marker } from "react-native-maps";
 
 export default function NearBy() {
-  const { data: houses, isLoading } = useGetHousesQuery();
+  const { data: houses, isLoading } = useGetHousesQuery({});
+  console.log(houses);
+
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -46,7 +53,7 @@ export default function NearBy() {
     lat1: number,
     lon1: number,
     lat2: number,
-    lon2: number
+    lon2: number,
   ): number {
     const toRad = (value: number) => (value * Math.PI) / 180;
     const R = 6371; // Earth radius in KM
@@ -64,11 +71,13 @@ export default function NearBy() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
-  const defaultLat = parseFloat(houses[0]?.latitude ?? "-1.9501");
-  const defaultLng = parseFloat(houses[0]?.longitude ?? "30.0588");
+  if (houses) {
+    const defaultLat = parseFloat(houses[0]?.latitude ?? "-1.9501");
+    const defaultLng = parseFloat(houses[0]?.longitude ?? "30.0588");
+  }
 
   // Nearest House to the user function
-  const nearestHouses: house[] =
+  const nearestHouses: any =
     userLocation &&
     houses
       ?.filter((house: any) => house.latitude && house.longitude) // only valid coords
@@ -78,7 +87,7 @@ export default function NearBy() {
           userLocation.latitude,
           userLocation.longitude,
           parseFloat(house.latitude),
-          parseFloat(house.longitude)
+          parseFloat(house.longitude),
         ),
       }))
       .sort((a: any, b: any) => a.distance - b.distance);
@@ -90,8 +99,14 @@ export default function NearBy() {
     index: number;
   }) => {
     return (
-      <View className="flex flex-row items-center rounded-full gap-x-2 border border-border/50 py-1 px-2">
-        <Image source={{ uri: feature?.feature?.icon }} className="w-5 h-5" />
+      <View className="flex flex-row items-center rounded-full gap-x-2 mr-1 flex-wrap border border-border/50 py-1 px-2">
+        {feature?.feature?.icon ? (
+          <Image source={{ uri: feature?.feature?.icon }} className="w-5 h-5" />
+        ) : (
+          <Text className="text-xs">
+            {feature.custom_feature_name || feature?.feature?.name}
+          </Text>
+        )}
         <Text>{feature?.available_number}</Text>
       </View>
     );
@@ -111,7 +126,7 @@ export default function NearBy() {
           shadowRadius: 10,
           elevation: 10,
         }}
-        className=" mx-3 bg-white rounded-2xl p-2 flex w-[80vw] flex-row gap-x-2"
+        className=" bg-white rounded-2xl p-2 flex w-[90vw] mx-2 flex-row gap-x-2"
       >
         <View className="w-[40vw] h-[100%] overflow-hidden rounded-xl">
           <Image
@@ -124,7 +139,7 @@ export default function NearBy() {
           <View className="flex-1">
             <Text className="font-bold text-lg text-border">
               {nearestHouse?.name ||
-                `${nearestHouse?.house_category?.name} For ${nearestHouse?.payment_category}`}
+                `${nearestHouse?.house_category_data?.name} For ${nearestHouse?.payment_category}`}
             </Text>
           </View>
           <View className="flex flex-col py-2">
@@ -165,22 +180,22 @@ export default function NearBy() {
       </TouchableOpacity>
       <MapView
         // provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: !isNaN(parseFloat(houses?.[0]?.latitude))
-            ? parseFloat(houses[0].latitude)
-            : -1.9501, // Kigali
-          longitude: !isNaN(parseFloat(houses?.[0]?.longitude))
-            ? parseFloat(houses[0].longitude)
-            : 30.0588, // Kigali
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
         // initialRegion={{
-        //   latitude: -1.9501,
-        //   longitude: 30.0588,
+        //   latitude: !isNaN(parseFloat(houses?.[0]?.latitude))
+        //     ? parseFloat(houses[0].latitude)
+        //     : -1.9501, // Kigali
+        //   longitude: !isNaN(parseFloat(houses?.[0]?.longitude))
+        //     ? parseFloat(houses[0].longitude)
+        //     : 30.0588, // Kigali
         //   latitudeDelta: 0.01,
         //   longitudeDelta: 0.01,
         // }}
+        initialRegion={{
+          latitude: userLocation ? userLocation.latitude : -1.9501, // Kigali
+          longitude: userLocation ? userLocation.longitude : 30.0588,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
         loadingEnabled
         liteMode
         loadingBackgroundColor="rgba(0,0,0,0.2)"
@@ -204,7 +219,10 @@ export default function NearBy() {
           );
         })}
       </MapView>
-      <View className="absolute bottom-8 h-[23vh]">
+      <View
+        className="h-[23vh]"
+        style={{ position: "absolute", bottom: TAB_BAR_HEIGHT + 10 }}
+      >
         <FlatList
           showsHorizontalScrollIndicator={false}
           horizontal
@@ -220,6 +238,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: "relative",
+    paddingBottom: TAB_BAR_HEIGHT,
   },
   map: {
     flex: 1,

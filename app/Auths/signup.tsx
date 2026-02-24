@@ -3,13 +3,14 @@ import LoginComponent from "@/components/AuthComponent/Login";
 import SignUpComponent from "@/components/AuthComponent/SignUpComponent";
 import { height, width } from "@/components/global";
 import { useState } from "react";
+// import useSocialAuth from "../hooks/useSocialAuth";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 export default function Signup() {
   const [choosenaction, setChoosenAction] = useState("Login");

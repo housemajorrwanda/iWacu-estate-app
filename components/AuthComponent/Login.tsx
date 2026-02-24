@@ -1,3 +1,4 @@
+import useSocialAuth from "@/app/hooks/useSocialAuth";
 import {
   FaceBookIcon,
   GoogleIcon,
@@ -23,6 +24,7 @@ export default function LoginComponent() {
   const [password, setPassword] = useState<string>("");
   const [error,setError]=useState(false)
   const [loginUser, { isLoading }] = useLoginUsersMutation();
+  const { signInWithOAuth, loading: socialAuthLoading } = useSocialAuth();
   async function Login() {
     setError(false)
     if(!email || !password){
@@ -84,6 +86,10 @@ export default function LoginComponent() {
           const Icon = socialMedia?.icon;
           return (
             <TouchableOpacity
+            onPress={() => signInWithOAuth(socialMedia?.name.toLowerCase()  as
+                    | "google"
+                    | "facebook"
+                    | "apple")}
               key={index}
               className="flex flex-row bg-white gap-x-2 py-3 border border-border/40 px-3 rounded-full w-[35%]"
             >

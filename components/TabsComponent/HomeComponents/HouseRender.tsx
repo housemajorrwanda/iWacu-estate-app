@@ -1,66 +1,16 @@
 import Booked from "@/assets/images/booked.svg";
 import { height, smallIconSize, width } from "@/components/global";
-import { house, useGetHousesQuery } from "@/redux/Slice/houseSlice";
+import { house } from "@/redux/Slice/houseSlice";
 // import { RootState } from "@reduxjs/toolkit/query";
-import { RootState } from "@/redux/store";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import React from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import Spinner from "react-native-loading-spinner-overlay";
-import { useSelector } from "react-redux";
-const HouseRender = () => {
+// import { useSelector } from "react-redux";
+
+const HouseRender = ({ houses, isLoading }: any) => {
   const router = useRouter();
-
-  const { house_category } = useSelector((state: RootState) => state?.states);
-  const {
-    data: houses,
-    isLoading,
-    isFetching,
-    refetch,
-    isError,
-  } = useGetHousesQuery();
-  const allhouses = houses ?? [];
-  const filteredhouses = useSelector(
-    (state: RootState) => state.filteredHouses?.houses ?? []
-  );
-  // const [displayedHouses, setDisplayedHouses] = useState([]);
-  // let displayedHouses: house[] = [];
-  // console.log("house category",house_category);
-
-  // useEffect(() => {
-  //   let results = allhouses;
-
-  //   // 1️⃣ Apply server-filtered houses first if they exist
-  //   if (filteredhouses?.length > 0) {
-  //     results = filteredhouses;
-  //   }
-
-  //   // 2️⃣ Apply category filter on top
-  //   if (house_category) {
-  //     results = results.filter(
-  //       (h: any) => h?.house_category?.id === house_category
-  //     );
-  //   }
-
-  //   setDisplayedHouses(results);
-  // }, [filteredhouses, house_category, allhouses]);
-  const displayedHouses = React.useMemo(() => {
-  let results = allhouses ?? [];
-
-  if (filteredhouses?.length > 0) {
-    results = filteredhouses;
-  }
-
-  if (house_category) {
-    results = results.filter(
-      (h: any) => h?.house_category?.id === house_category
-    );
-  }
-
-  return results;
-}, [allhouses, filteredhouses, house_category]);
-
 
   const renderHouse = ({
     item: house,
@@ -130,7 +80,7 @@ const HouseRender = () => {
         textContent="House Major ..."
         // customIndicator={<LoadingComponent />}
       />
-      {displayedHouses?.length >0 ? (
+      {houses?.length > 0 ? (
         <FlatList
           numColumns={2}
           columnWrapperStyle={{
@@ -142,7 +92,7 @@ const HouseRender = () => {
             paddingBottom: height * 0.127, // optional spacing at bottom
           }}
           keyExtractor={(item) => item.id.toString()}
-          data={displayedHouses}
+          data={houses}
           renderItem={renderHouse}
           showsVerticalScrollIndicator={false}
         />
@@ -152,9 +102,11 @@ const HouseRender = () => {
             source={require("@/assets/Animations/NoResult.json")}
             autoPlay
             loop
-             style={{ width: width * 0.5, height: width * 0.5 }}
+            style={{ width: width * 0.5, height: width * 0.5 }}
           />
-          <Text className="text-center font-bold">No House Available at the moment please try again Later</Text>
+          <Text className="text-center font-bold">
+            No House Available at the moment please try again Later
+          </Text>
         </View>
       )}
     </View>

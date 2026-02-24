@@ -1,297 +1,267 @@
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft, ChevronDown } from "lucide-react-native";
+import React, { useRef, useState } from "react";
 import {
-    getDistanceFromLatLonInKm,
-    getTime,
+  Dimensions,
+  ImageBackground,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import {
+  proximityInterface,
+  useGetProximilityQuery,
+  useGetSingleHouseQuery,
+} from "@/redux/Slice/houseSlice";
+
+import {
+  getDistanceFromLatLonInKm,
+  getTime,
 } from "@/components/functions/getDistance";
-import { color, height, width } from "@/components/global";
+
 import Error from "@/components/Reusable/Error";
 import Loading from "@/components/Reusable/Loading";
 import Agent from "@/components/TabsComponent/HomeComponents/SingleHouse/Agent";
 import Features from "@/components/TabsComponent/HomeComponents/SingleHouse/HouseFeature";
-import {
-    proximityInterface,
-    useGetProximilityQuery,
-    useGetSingleHouseQuery,
-} from "@/redux/Slice/houseSlice";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
-import React, { useState } from "react";
-import {
-    ImageBackground,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
-import Animated, {
-    runOnJS,
-    SlideInRight,
-    SlideOutRight,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TAB_BAR_HEIGHT } from "@/components/global";
+
 export default function SingleHouse() {
   const { id }: any = useLocalSearchParams();
-
+  const router = useRouter();
   const inset = useSafeAreaInsets();
-  const {
-    data: proximity,
-    isError: proximityError,
-    isLoading: proximityLoading,
-  } = useGetProximilityQuery();
-  const [choosenProximity, setChoosenProximity] =
-    useState<proximityInterface | null>(proximity ? proximity[0] : null);
-  const [chooseProximity, setChooseProximity] = useState(false);
+  const { width, height } = Dimensions.get("screen");
+
+  const { data: house, isLoading, isError } = useGetSingleHouseQuery(id);
+
+  const { data: proximity } = useGetProximilityQuery();
+
+  const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-   const [nextIndex, setNextIndex] = useState<number | null>(null);
-  const translateX = useSharedValue(0);
-  const fade = useSharedValue(1);
-  const {
-    data: house,
-    isLoading,
-    isFetching,
-    refetch,
-    isError,
-  } = useGetSingleHouseQuery(id);
-  const houseImages = [
-    ...(house?.house_images || []),
-    { images: house?.thumbnail },
-    // Flatten all feature images into objects with `images: <url>`
-    ...(house?.features || []).flatMap((f: any) =>
-      (f?.images || []).map((img: string) => ({ images: img }))
-    ),
-  ];
 
-  //   Function to update Image index
-  // Animated style
-  const slideImage = (direction: "next" | "prev") => {
-    if (houseImages.length <= 1) return;
+  const [chooseProximity, setChooseProximity] = useState(false);
+  const [choosenProximity, setChoosenProximity] =
+    useState<proximityInterface | null>(null);
 
-    const newIndex =
-      direction === "next"
-        ? (currentIndex + 1) % houseImages.length
-        : (currentIndex - 1 + houseImages.length) % houseImages.length;
-
-    setNextIndex(newIndex);
-    translateX.value = direction === "next" ? width : -width;
-
-    // Animate to center
-    translateX.value = withTiming(0, { duration: 300 }, () => {
-      runOnJS(setCurrentIndex)(newIndex);
-      runOnJS(setNextIndex)(null);
-    });
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  if (isError) {
+  if (isLoading)
     return (
-      <View className="py-6 ">
-        <Error />
-      </View>
-    );
-  }
-  //   Proximity Distance
-  //   console.log(chooseProximity);
-  const distance = getDistanceFromLatLonInKm(
-    parseFloat(choosenProximity?.latitude || "0"),
-    parseFloat(choosenProximity?.longitude || "0"),
-    parseFloat(house?.latitude || "0"),
-    parseFloat(house?.longitude || "0")
-  );
-  //   console.log(`Distance: ${distance.toFixed(2)} km`);
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 flex flex-col items-center justify-center relative">
-        {/* <View
-          style={{
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          className="flex flex-1 absolute  h-[100%] w-[100%]"
-        ></View> */}
+      <View className="flex-1 justify-center items-center">
         <Loading />
       </View>
     );
-  }
-  //   console.log(house?.images);
-  const router = useRouter();
+
+  if (isError) return <Error />;
+
+  const houseImages = [
+    ...(house?.house_images || []),
+    { images: house?.thumbnail },
+  ];
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = event.nativeEvent.contentOffset.x / slideSize;
+    const roundIndex = Math.round(index);
+    setCurrentIndex(roundIndex);
+  };
+
+  const distance =
+    choosenProximity &&
+    getDistanceFromLatLonInKm(
+      parseFloat(choosenProximity?.latitude || "0"),
+      parseFloat(choosenProximity?.longitude || "0"),
+      parseFloat(house?.latitude || "0"),
+      parseFloat(house?.longitude || "0"),
+    );
+
   return (
-    <View className="bg-white flex-1">
+    <View className="flex-1 bg-black">
+      {/* IMAGE SLIDER */}
+      <View style={{ height: height * 0.55 }}>
         <ScrollView
-      contentContainerStyle={{
-        paddingBottom: height * 0.04,
-      }}
-      className="flex flex-col flex-1 bg-white relative"
-      style={
-        {
-          // paddingVertical:Platform.OS=='android'?inset.top:null
-        }
-      }
-    >
-      <View>
-        {houseImages.length > 0 && (
-          <Animated.View
-            style={[{ width, height: height * 0.5 }, animatedStyle]}
-          >
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          {houseImages.map((item, index) => (
             <ImageBackground
-              source={{ uri: houseImages[currentIndex]?.images }}
-              style={{ width: "100%", height: "100%" }}
-              className="flex flex-col items-center justify-center"
+              key={index}
+              source={{ uri: item?.images }}
+              style={{
+                width,
+                height: height * 0.55,
+              }}
             >
-              {/* Top back arrow */}
-              <TouchableOpacity
-                className="absolute z-20 left-[2vw] top-[7vh] rounded-full bg-border p-2"
-                onPress={() =>
-                  router?.canGoBack()
-                    ? router.back()
-                    : router.navigate("/(tabs)/home")
-                }
-              >
-                <ArrowLeft color="white" />
-              </TouchableOpacity>
-
-              {/* Prev / Next Arrows */}
-              <View className="absolute top-[40%] w-[98%] mx-auto flex flex-row justify-between">
-                <TouchableOpacity
-                  className="rounded-full bg-border p-2"
-                  onPress={() => slideImage("prev")}
-                >
-                  <ChevronLeft color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="rounded-full bg-border p-2"
-                  onPress={() => slideImage("next")}
-                >
-                  <ChevronRight color="white" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Dots */}
-              <View className="absolute bottom-10 flex-row items-center justify-center w-full gap-2">
-                {houseImages.map((_, idx) => (
-                  <View
-                    key={idx}
-                    style={{
-                      width: currentIndex === idx ? 10 : 6,
-                      height: currentIndex === idx ? 10 : 6,
-                      borderRadius: 5,
-                      backgroundColor:
-                        currentIndex === idx
-                          ? color.loading
-                          : "rgba(255,255,255,0.5)",
-                      marginHorizontal: 4,
-                    }}
-                  />
-                ))}
-              </View>
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.7)"]}
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  width: "100%",
+                  height: 180,
+                }}
+              />
             </ImageBackground>
-          </Animated.View>
-        )}
+          ))}
+        </ScrollView>
+
+        {/* Back Button */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{
+            position: "absolute",
+            top: inset.top + 10,
+            left: 20,
+          }}
+          className="bg-black/40 p-2 rounded-full"
+        >
+          <ArrowLeft color="white" />
+        </TouchableOpacity>
+
+        {/* Pagination Dots */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: height * 0.08,
+          }}
+          className=" w-full flex-row justify-center"
+        >
+          {houseImages.map((_, index) => (
+            <View
+              key={index}
+              style={{
+                width: currentIndex === index ? width * 0.08 : height * 0.01,
+                height: height * 0.01,
+                borderRadius: width * 0.8,
+                marginHorizontal: 4,
+                backgroundColor:
+                  currentIndex === index ? "white" : "rgba(255,255,255,0.5)",
+              }}
+            />
+          ))}
+        </View>
       </View>
+
+      {/* GLASS CONTENT CARD */}
+      {/* GLASS CONTENT CARD */}
       <View
         style={{
-          alignSelf: "center",
-          marginTop: -height * 0.025,
+          flex: 1,
+          marginTop: -40,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -5 },
+          shadowOpacity: 0.2,
+          shadowRadius: 15,
+          elevation: 25,
         }}
-        className="flex flex-col bg-border rounded-full   py-3 items-center justify-center px-4"
+        className="rounded-t-[35px] overflow-hidden"
       >
-        <Text className="font-bold">{house?.address}</Text>
-      </View>
-      {/* Pricing and Approximity */}
-      <View className="flex z-10 relative flex-row items-start justify-between w-[90%] mx-auto my-2">
-        <View className="flex flex-col py-4">
-          <Text className="font-bold text-border">
-            {house?.currenct || "RWF"} {house?.price}
-          </Text>
-        </View>
-        <View className="flex flex-row items-center gap-x-2">
-          <Text
-            className="text-border"
-            style={{
-              position: "fixed",
+        <BlurView
+          intensity={80}
+          tint="light"
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(255,255,255,0.25)",
+          }}
+        >
+          {/* SCROLL CONTENT */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 24,
+              paddingTop: 30,
+              paddingBottom: TAB_BAR_HEIGHT, // critical fix
             }}
           >
-            Proximity
-          </Text>
-          <View className="flex flex-col relative">
-            <TouchableOpacity
-              onPress={() => setChooseProximity(!chooseProximity)}
-              className="flex flex-col"
-            >
-              <View className="border border-border flex flex-row items-center rounded-lg py-2 px-2">
-                <Text className="text-border">{choosenProximity?.name}</Text>
-                <ChevronDown color={color.border} />
+            {/* TITLE + PRICE */}
+            <View className="flex-row justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="text-2xl font-bold">{house?.title}</Text>
+                <Text className="font-bold mt-1">{house?.address}</Text>
               </View>
-              {chooseProximity && (
-                <Animated.View
-                  entering={SlideInRight.duration(500)}
-                  exiting={SlideOutRight.duration(500)}
-                  className="absolute top-full left-0 w-full bg-white z px-2 py-2 gap-y-2 divide-x rounded-lg z-50"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 5,
-                    zIndex: 100,
-                  }}
-                >
-                  {proximity?.map(
-                    (proximityItem: proximityInterface, index: number) => {
-                      return (
-                        <TouchableOpacity
-                          onPress={() => {
-                            setChoosenProximity(proximityItem);
-                            setChooseProximity(false);
-                          }}
-                          key={index}
-                        >
-                          <Text className="text-border">
-                            {proximityItem?.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    }
-                  )}
-                </Animated.View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+
+              <View className="items-end">
+                <Text className="text-2xl font-bold ">
+                  {house?.currenct || "RWF"} {house?.price}
+                </Text>
+                <Text>
+                  {house?.payment_category === "Rent" ? "/Month" : "For Sale"}
+                </Text>
+              </View>
+            </View>
+
+            {/* PROXIMITY */}
+            <View className="mt-5">
+              <TouchableOpacity
+                onPress={() => setChooseProximity(!chooseProximity)}
+                className="border border-gray-300 rounded-xl px-4 py-3 flex-row justify-between items-center bg-white/60"
+              >
+                <Text>{choosenProximity?.name || "Select proximity"}</Text>
+                <ChevronDown size={18} />
+              </TouchableOpacity>
+
+              {chooseProximity &&
+                proximity?.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => {
+                      setChoosenProximity(item);
+                      setChooseProximity(false);
+                    }}
+                    className="py-2"
+                  >
+                    <Text>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+
+            {/* DISTANCE */}
+            {distance && (
+              <View className="flex-row justify-between mt-3">
+                <Text>{distance.toFixed(2)} km</Text>
+                <Text>{getTime(distance, 40)}</Text>
+              </View>
+            )}
+
+            <Features features={house?.feature_assignments} />
+
+            <Agent agent={house.agent} uploader={house.uploader_data} />
+
+            {/* DESCRIPTION */}
+            <View className="mt-4">
+              <Text className="text-lg font-bold mb-2">Description</Text>
+              <Text>{house?.description}</Text>
+            </View>
+            <View
+              style={{
+                // position: "absolute",
+                // bottom: TAB_BAR_HEIGHT,
+                marginVertical: height * 0.02,
+                width: "100%",
+                alignItems: "center",
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => router.navigate("/(tabs)/home/booking")}
+                className="bg-loading py-4 w-[100%] flex flex-col items-center justify-between rounded-full"
+              >
+                <Text className="text-white font-bold text-lg">Book now</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+          {/* STICKY BUTTON */}
+        </BlurView>
       </View>
-      {/* Monthly and Distance */}
-      <View className="flex flex-row items-center justify-between w-[90%] mx-auto">
-        <Text className="text-border">
-          {house?.payment_category == "Rent" ? "Monthly" : null}
-        </Text>
-        <View className="flex flex-row gap-x-1">
-          <Text className="text-border">
-            {isLoading ? "loading ..." : `${distance?.toFixed(2)}km`}
-          </Text>
-          <Text className="text-border">|</Text>
-          <Text className="text-border">{getTime(distance, 40)}</Text>
-        </View>
-      </View>
-      {/* FEATURES AND Description */}
-      <Features features={house?.feature_assignments} />
-      <Agent />
-      <View className="flex flex-col w-[90%] mx-auto">
-        <Text className="font-bold text-border text-lg py-2 pb-4">
-          Description
-        </Text>
-        <Text>{house?.description}</Text>
-      </View>
-     
-    </ScrollView>
-     <TouchableOpacity style={{
-        position:'sticky'
-      }} className="bg-black rounded-full px-9 my-4  w-[40vw] flex flex-col items-center justify-center py-2 self-center">
-        <Text className="text-white font-bold text-lg">Book</Text>
-      </TouchableOpacity>
+
+      {/* BOOK BUTTON */}
     </View>
   );
 }

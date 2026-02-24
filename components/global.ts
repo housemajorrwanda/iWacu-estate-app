@@ -13,3 +13,4 @@ export const smallIconSize={
     width:width * 0.2,
     height:height * 0.04
 }
+export const TAB_BAR_HEIGHT = height * 0.12;

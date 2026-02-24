@@ -1,3 +1,4 @@
+import useSocialAuth from "@/app/hooks/useSocialAuth";
 import {
   FaceBookIcon,
   GoogleIcon,
@@ -9,6 +10,7 @@ import {
 import { useRegisterUserMutation } from "@/redux/Slice/userSlice";
 import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import Spinner from "react-native-loading-spinner-overlay";
 import Toast from "react-native-toast-message";
 import { width } from "../global";
 import InputField from "../Reusable/Input";
@@ -21,12 +23,15 @@ export default function SignUpComponent() {
   const [full_name, setFullName] = useState<string>();
   const [phone_number, setPhonenumber] = useState<string>("");
   const [email, setEmail] = useState<string>();
+  const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState<string>();
   const [confirmPassword, setConfirmPassword] = useState<string>();
   const [account_type, setType] = useState("owner");
   const [message,setMessage]=useState("")
   const [registerUser, { isLoading }] = useRegisterUserMutation();
+  const { signInWithOAuth, loading: socialAuthLoading } = useSocialAuth();
   const SignupFunction = async () => {
+    
     if (password !== confirmPassword) {
       Toast.show({
         type: "error",
@@ -103,6 +108,7 @@ export default function SignUpComponent() {
   }
   return (
     <View>
+      {(loading || socialAuthLoading) && <Spinner color="blue" size='large' textContent="Loading" />}
       <View className="flex flex-col flex-1 py-3 gap-y-2">
         <InputField
           icon={<Profile />}
@@ -172,6 +178,10 @@ export default function SignUpComponent() {
           return (
             <TouchableOpacity
               key={index}
+              onPress={() => signInWithOAuth(socialMedia?.name.toLowerCase()  as
+                      | "google"
+                      | "facebook"
+                      | "apple")}
               className="flex flex-row bg-white gap-x-2 py-3 border border-border/40 px-3 rounded-full w-[35%]"
             >
               <Icon />

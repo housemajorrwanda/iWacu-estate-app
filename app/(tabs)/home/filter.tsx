@@ -40,14 +40,14 @@ export default function Filter() {
   const [houseFeatureWithNumber, setHouseFeatureWithNumber] = useState<any>([]);
   const [houseFeatureWithoutNumber, setHouseFeatureWithoutNumber] =
     useState<any>([]);
-    const dispatch=useDispatch<AppDispatch>()
-    const [loading,setLoading]=useState(false)
+  const dispatch = useDispatch<AppDispatch>();
+  const [loading, setLoading] = useState(false);
   const [choosenFeature, setChoosenFeature] = useState<any>([]);
   const formatPrice = (p: number) => {
     if (p >= 900000) return "900k+";
     return `${Math.round(p / 1000) * 1000}`.replace(
       /\B(?=(\d{3})+(?!\d))/g,
-      ","
+      ",",
     );
   };
   const payment_category: paymentCategoryInterface[] = [
@@ -63,10 +63,10 @@ export default function Filter() {
   useEffect(() => {
     if (houseFeatures) {
       const withNumber = houseFeatures.filter(
-        (feature: FeatureInterface) => feature?.show_available_number
+        (feature: FeatureInterface) => feature?.show_available_number,
       );
       const withoutNumber = houseFeatures.filter(
-        (feature: FeatureInterface) => !feature?.show_available_number
+        (feature: FeatureInterface) => !feature?.show_available_number,
       );
       //   console.log(withoutNumber);
 
@@ -84,29 +84,25 @@ export default function Filter() {
 
   const formatFeatures = () => {
     return Object.entries(choosenFeature).map(([key, value]) =>
-      value === 0 ? key : `${key}:${value}`
+      value === 1 ? key : `${key}:${value}`,
     );
   };
-const applyFilters = async () => {
-  setLoading(true)
-  const features = formatFeatures();
+  const applyFilters = async () => {
+    setLoading(true);
 
-  const houses = await filterHousesFromAPI({
-    price,
-    choosenHouseType,
-    active_payment_category: active_payment_category,
-    features,
-  });
+    const features = formatFeatures(); // ["Wifi", "Rooms:4"]
 
-  // Update your UI with the result
-  // setFilteredHouses(houses);
-  // console.log("filtered houses",houses);
-  dispatch(setFilteredHouses(houses))
-  router.navigate("/(tabs)/home")
- setLoading(false)
+    const houses = await filterHousesFromAPI({
+      priceMax: price, // slider value
+      houseCategory: choosenHouseType, // UUID
+      active_payment_category: active_payment_category,
+      features,
+    });
 
-  
-};
+    dispatch(setFilteredHouses(houses));
+    router.navigate("/(tabs)/home");
+    setLoading(false);
+  };
 
   return (
     <View
@@ -150,7 +146,7 @@ const applyFilters = async () => {
                   </Text>
                 </TouchableOpacity>
               );
-            }
+            },
           )}
         </View>
         {/* Price Range */}
@@ -258,7 +254,7 @@ const applyFilters = async () => {
                   </View>
                 </View>
               );
-            }
+            },
           )}
         </View>
         {/* Horizontal Line */}
@@ -295,12 +291,15 @@ const applyFilters = async () => {
                     </View>
                   </TouchableOpacity>
                 );
-              }
+              },
             )}
           </View>
         </View>
 
-        <TouchableOpacity onPress={applyFilters} className="bg-black self-center px-6 py-3 rounded-full">
+        <TouchableOpacity
+          onPress={applyFilters}
+          className="bg-black self-center px-6 py-3 rounded-full"
+        >
           <Text className="text-white font-bold">Done</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -6,7 +6,7 @@ import {
   Tax,
   TruckIcon,
 } from "@/assets/images";
-import { color, width } from "@/components/global";
+import { color, height, TAB_BAR_HEIGHT, width } from "@/components/global";
 import Error from "@/components/Reusable/Error";
 import Loading from "@/components/Reusable/Loading";
 import { house, useGetHousesQuery } from "@/redux/Slice/houseSlice";
@@ -25,7 +25,7 @@ import {
 import GooglePlacesTextInput from "react-native-google-places-textinput";
 import MapView, { Marker, Polyline as PolyLineMap } from "react-native-maps";
 export default function LuggageDeliver() {
-  const { data: houses } = useGetHousesQuery();
+  const { data: houses } = useGetHousesQuery({});
   interface location {
     latitude: number;
     longitude: number;
@@ -65,7 +65,7 @@ export default function LuggageDeliver() {
     try {
       setLoading(true);
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${mapapiKey}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${mapapiKey}`,
       );
       const json = await res.json();
       console.log(json);
@@ -105,7 +105,7 @@ export default function LuggageDeliver() {
   // Getting Place Details
   const getPlaceDetails = async (placeId: string) => {
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${mapapiKey}`
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${mapapiKey}`,
     );
     const json = await response.json();
     const location = json.result?.geometry?.location;
@@ -122,7 +122,7 @@ export default function LuggageDeliver() {
   // Now Getting Routing on Map View
   const getRouteDirections = async (
     fromLocation: location,
-    toLocation: location
+    toLocation: location,
   ) => {
     try {
       const response = await fetch(
@@ -154,7 +154,7 @@ export default function LuggageDeliver() {
             },
             travelMode: "DRIVE",
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -182,7 +182,7 @@ export default function LuggageDeliver() {
       if (fromLocation && toLocation) {
         const routeDirection = await getRouteDirections(
           fromLocation,
-          toLocation
+          toLocation,
         );
 
         if (routeDirection?.polylinePoints) {
@@ -190,7 +190,7 @@ export default function LuggageDeliver() {
             ([latitude, longitude]) => ({
               latitude,
               longitude,
-            })
+            }),
           );
 
           setMapCoord(coords);
@@ -240,7 +240,6 @@ export default function LuggageDeliver() {
   ];
   return (
     <View className="flex-1 relative">
-      
       <View className="flex flex-col  items-center justify-center gap-y-2 gap-x-2 absolute z-50 top-[10vh] left-[5vw]  mx-auto ">
         <TouchableOpacity
           onPress={() => setActivelocation("from")}
@@ -379,9 +378,10 @@ export default function LuggageDeliver() {
         <Loading />
       )}
       <View
-        className="bg-white absolute bottom-[8vh] w-[98%] left-[1vw] mx-auto rounded-3xl  py-6 items-center justify-center gap-x-3 flex flex-row "
+        className="bg-white absolute  w-[98%] left-[1vw] mx-auto rounded-3xl  py-6 items-center justify-center gap-x-3 flex flex-row "
         style={{
           ...styles.boxShadow,
+          bottom: TAB_BAR_HEIGHT - height * 0.007,
         }}
       >
         {TransportMeans?.map((means: meansInterface, index: number) => {
@@ -391,14 +391,16 @@ export default function LuggageDeliver() {
               key={index}
               className="flex flex-row relative items-center "
               style={{
-                paddingRight:2
+                paddingRight: 2,
               }}
             >
               <View className="flex flex-col items-center">
                 <View className="w-[10vw] bg-border/20 h-[10vw] border border-border/50 rounded-full flex flex-col center">
                   <Icon width={width * 0.06} height={width * 0.06} />
                 </View>
-                <Text className="text-border font-bold text-sm">{means?.name}</Text>
+                <Text className="text-border font-bold text-sm">
+                  {means?.name}
+                </Text>
                 <View className="flex flex-row items-center ">
                   <Text className="text-border text-sm">{means?.price}/</Text>
                   <Text className="text-border text-xs">km</Text>

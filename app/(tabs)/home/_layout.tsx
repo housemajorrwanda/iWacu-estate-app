@@ -17,6 +17,9 @@ export default function HomeLayout() {
                 <Stack.Screen name='addhouse' options={{
                     headerShown: false
                 }} />
+                <Stack.Screen name='booking' options={{
+                    headerShown: false
+                }} />
                 {/* <Stack.Screen
                     name="[id]"
                     options={{ headerShown:false }}
