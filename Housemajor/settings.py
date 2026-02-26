@@ -72,19 +72,19 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'umuzylvc_housemajor',        # Database name
-        'USER': 'umuzylvc_admin',            # Database username
-        'PASSWORD': 'Ngoga@1patrick',    # Database password
-        'HOST': 'localhost',         # Or IP address of DB server
-        'PORT': '3306',              # Default MySQL port
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'umuzylvc_housemajor',        # Database name
+#         'USER': 'umuzylvc_admin',            # Database username
+#         'PASSWORD': 'Ngoga@1patrick',    # Database password
+#         'HOST': 'localhost',         # Or IP address of DB server
+#         'PORT': '3306',              # Default MySQL port
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -172,3 +172,4 @@ CLERK_SECRET_KEY='sk_test_5SVQefJB8AwJ4C4WihplykRZenZBzQmNRCbCd1dc2I'
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY='pk_test_ZW5oYW5jZWQtd2hpcHBldC04NC5jbGVyay5hY2NvdW50cy5kZXYk'
 PAYPACK_ID='dacc5eb6-f60a-11f0-8c67-deadd43720af'
 PAYPACK_SECRET_KEY='d522db6f4bddbd925890dcd30f068a8fda39a3ee5e6b4b0d3255bfef95601890afd80709'
+EMAIL_URL='https://housemajor.umuzikigatolika.com/'

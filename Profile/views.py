@@ -18,12 +18,33 @@ from django.conf import settings
 from clerk_backend_api import Clerk
 from clerk_backend_api.security.types import AuthenticateRequestOptions
 from rest_framework.generics import RetrieveUpdateAPIView
+from django.db import IntegrityError
+import logging
 #For Clerk authentication
 CLERK_SECRET_KEY = settings.CLERK_SECRET_KEY
 clerk_sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
-url='https://44550e797e53.ngrok-free.app/'
+url=settings.EMAIL_URL
 User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
+import requests
+from django.core.files.base import ContentFile
+
+
+def save_image_from_url(user, image_url):
+    if not image_url:
+        return
+
+    try:
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            file_name = f"profile_{user.id}.jpg"
+            user.profile_picture.save(
+                file_name,
+                ContentFile(response.content),
+                save=False
+            )
+    except Exception as e:
+        print("Image download error:", e)
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -98,16 +119,27 @@ def reset_password_form(request, uidb64, token):
     return render(request, "reset_password_form.html", context)
 
 
+
+
+logger = logging.getLogger(__name__)
+
+
 class ClerkLoginView(APIView):
     def post(self, request):
         try:
-            # 🔐 Clerk reads Authorization header internally
+            # 🔍 Check Authorization header early
+            auth_header = request.headers.get("Authorization")
+            if not auth_header:
+                return Response(
+                    {"detail": "Authorization header missing"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            # 🔐 Authenticate with Clerk
             request_state = clerk_sdk.authenticate_request(
                 request,
                 AuthenticateRequestOptions()
             )
-
-            print("Clerk request state:", request_state)
 
             if not request_state.is_signed_in:
                 return Response(
@@ -115,24 +147,48 @@ class ClerkLoginView(APIView):
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
-            # ✅ Extract from payload
-            payload = request_state.payload
+            # ✅ Extract payload safely
+            payload = request_state.payload or {}
             clerk_user_id = payload.get("sub")
-            clerk_user = clerk_sdk.users.get(user_id=clerk_user_id)
+
+            if not clerk_user_id:
+                return Response(
+                    {"detail": "Invalid Clerk payload"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 🔍 Fetch Clerk user
+            try:
+                clerk_user = clerk_sdk.users.get(user_id=clerk_user_id)
+            except Exception as clerk_error:
+                logger.exception("Clerk user fetch failed")
+                return Response(
+                    {"detail": "Failed to fetch user from Clerk"},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
 
             email = clerk_user.email_addresses[0].email_address
-            full_name = f"{clerk_user.first_name} {clerk_user.last_name}".strip()
+            full_name = f"{clerk_user.first_name or ''} {clerk_user.last_name or ''}".strip()
             image_url = clerk_user.image_url
 
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    "full_name": full_name,
-                    # "phone_number": f"clerk-{clerk_user.id[:8]}",
-                    "account_type": "buyer",
-                    "profile_picture": image_url,
-                }
-            )
+            # 🗄️ Create or get local user
+            try:
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        "full_name": full_name,
+                        "account_type": "buyer",
+                        # "profile_picture": image_url,
+                    }
+                )
+                if created:
+                    save_image_from_url(user, image_url)
+                    user.save()
+            except IntegrityError:
+                return Response(
+                    {"detail": "Database error while creating user"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
             token, _ = Token.objects.get_or_create(user=user)
 
@@ -145,15 +201,17 @@ class ClerkLoginView(APIView):
                     "image": image_url,
                     "created": created,
                 }
-            })
-
-
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print("❌ Clerk auth error:", str(e))
+            logger.exception("Unexpected Clerk auth error")
+
             return Response(
-                {"detail": str(e)},
-                status=status.HTTP_401_UNAUTHORIZED
+                {
+                    "detail": "Authentication failed",
+                    "error": str(e)  # remove in production if you want
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 class ProfileView(RetrieveUpdateAPIView):
     serializer_class = ProfileSerializer

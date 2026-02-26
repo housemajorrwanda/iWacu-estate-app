@@ -28,12 +28,19 @@ class AdditionalFeaturesSerializer(serializers.ModelSerializer):
 # --- Feature Assignment Serializer ---
 class HouseFeatureAssignmentSerializer(serializers.ModelSerializer):
     images = HouseFeatureImageSerializer(many=True, required=False)
-    feature=AdditionalFeaturesSerializer(required=False)
+    feature_data = AdditionalFeaturesSerializer(source='feature', read_only=True)
+    feature = serializers.PrimaryKeyRelatedField(
+        queryset=AdditionalFeatures.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
     class Meta:
         model = HouseFeatureAssignment
         fields = [
             "id",
             "feature",
+            "feature_data",
             "available_number",
             "custom_feature_name",
             "images",
@@ -58,8 +65,7 @@ class ProximitySerializer(serializers.ModelSerializer):
         model = Proximity
         fields = '__all__'
 # --- Main House Serializer ---
-import re
-from collections import defaultdict
+
 
 class HouseSerializer(serializers.ModelSerializer):
     agent = AgentSerializer()

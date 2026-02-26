@@ -13,14 +13,31 @@ class HouseViewSet(viewsets.ModelViewSet):
     queryset = House.objects.all()
     serializer_class = HouseSerializer
     parser_classes = [MultiPartParser, FormParser]
-    filter_backends = (filters.DjangoFilterBackend,)
-    filterset_class = HouseFilter
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    def perform_create(self, serializer):
-        print("Creating house:", self.request.data)
-        serializer.save(uploaded_by=self.request.user)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
 
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "success": False,
+                    "message": "Validation failed",
+                    "errors": serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save(uploaded_by=request.user)
+
+        return Response(
+            {
+                "success": True,
+                "message": "House created successfully",
+                "data": serializer.data
+            },
+            status=status.HTTP_201_CREATED
+        )
 class HouseCategoryViewSet(viewsets.ModelViewSet):
     queryset = HouseCategory.objects.all()
     serializer_class = HouseCategorySerializer

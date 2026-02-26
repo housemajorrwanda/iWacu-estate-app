@@ -93,7 +93,9 @@ class HouseFeatureAssignment(models.Model):
     available_number = models.CharField(max_length=20, blank=True, null=True)
     custom_feature_name = models.CharField(max_length=255, blank=True, null=True) 
     def __str__(self):
-        return f"{self.house.id} - {self.feature.name}"
+        if self.feature:
+            return f"{self.house.id} - {self.feature.name}"
+        return f"{self.house.id} - {self.custom_feature_name}"
 
 class HouseFeatureImage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False,unique=True)
@@ -105,7 +107,7 @@ class HouseFeatureImage(models.Model):
 class HouseImages(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False,unique=True)
     house=models.ForeignKey(to=House,on_delete=models.CASCADE,related_name='house_images')
-    images=models.ImageField(upload_to='Houses/House Images/')
+    images = models.ImageField(upload_to='Houses/house_images/')
 class Proximity(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False,unique=True)
     name=models.CharField(max_length=255)
