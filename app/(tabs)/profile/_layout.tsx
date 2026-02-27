@@ -21,7 +21,7 @@ export default function ProfileLayout() {
           }}
         />
         <Stack.Screen
-          name="mortgage"
+          name="mortagage"
           options={{
             headerShown: false,
           }}

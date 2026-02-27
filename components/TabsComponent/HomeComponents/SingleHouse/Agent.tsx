@@ -13,7 +13,7 @@ import {
 import { Avatar } from "react-native-elements";
 export default function Agent({ agent, uploader }: any) {
   const router = useRouter();
-  console.log("Agent data:", agent);
+  // console.log("Agent data:", agent);
   const handleAgentCall = async (phoneNumber: string) => {
     if (!phoneNumber) {
       Alert.alert("No phone number available");

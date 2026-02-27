@@ -65,6 +65,7 @@ export const prepareFormData = (houseData: HouseDataType) => {
   formData.append("address", houseData.address);
   formData.append("payment_category", houseData.purpose);
   formData.append("price", houseData.price);
+  formData.append("national_id", houseData.agent.id);
   // formData.append("address", houseData.address || "No address");
   formData.append("description", houseData.agent.description || "No description");
 

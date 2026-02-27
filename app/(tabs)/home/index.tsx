@@ -9,7 +9,7 @@ import {
 import { RootState } from "@/redux/store";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
-  MessageCircle,
+  BellDotIcon,
   Plus,
   RefreshCcwIcon,
   Search,
@@ -58,9 +58,11 @@ export default function Home() {
   const {
     data: categories,
     isLoading: categoryLoading,
+    error: categoryErrors,
     isError: categoryError,
     refetch: refetchCategories,
   } = useGetCategoriesQuery();
+  // console.log(categoryErrors);
 
   /** GET SELECTED CATEGORY FROM REDUX */
   const { house_category } = useSelector((state: RootState) => state?.states);
@@ -124,19 +126,19 @@ export default function Home() {
             placeholder="Search houses, price, location..."
             placeholderTextColor="#7A7575"
           />
+          <TouchableOpacity
+            onPress={() => router.navigate("/(tabs)/home/filter")}
+            // className="rounded-btn w-[7vw] h-[7vw] items-center justify-center bg-gray-100"
+          >
+            <SlidersHorizontal color="#7A7575" />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          onPress={() => router.navigate("/(tabs)/home/filter")}
+          onPress={() => router.navigate("/(tabs)/home/notifications")}
           className="rounded-btn w-[10vw] h-[10vw] items-center justify-center bg-gray-100"
         >
-          <SlidersHorizontal color="#7A7575" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => router.navigate("/chats/chatListScreen")}
-          className="rounded-btn w-[10vw] h-[10vw] items-center justify-center bg-gray-100"
-        >
-          <MessageCircle />
+          <BellDotIcon />
         </TouchableOpacity>
       </View>
 

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Dimensions, View } from "react-native";
+import React, { useMemo } from "react";
+import { Dimensions, Text, View } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 
 const screenWidth = Dimensions.get("window").width;
@@ -14,55 +14,62 @@ interface Props {
 }
 
 const MonthlyChart: React.FC<Props> = ({ monthlyStats }) => {
-  const [chartData, setChartData] = useState({
-    labels: [] as string[],
-    datasets: [{ data: [] as number[] }],
-  });
+  // 🔐 Safe fallback
+  if (!monthlyStats || monthlyStats.length === 0) {
+    return (
+      <View className="bg-[#F5F3F1] p-4 rounded-xl items-center justify-center">
+        <Text className="text-gray-500 text-sm">No monthly data</Text>
+      </View>
+    );
+  }
 
-  const [yAxisMax, setYAxisMax] = useState(0);
+  const values = monthlyStats.map((item) =>
+    Number.isFinite(item.value) ? item.value : 0,
+  );
 
-  useEffect(() => {
-    if (monthlyStats && monthlyStats.length > 0) {
-      const values = monthlyStats.map((item) => item.value);
-      const maxValue = Math.max(...values);
+  const maxValue = Math.max(...values);
 
-      setYAxisMax(maxValue + 2); // add some space above the max value
-      setChartData({
-        labels: monthlyStats.map((item) => item.month),
-        datasets: [
-          {
-            data: values,
-          },
-        ],
-      });
-    }
-  }, [monthlyStats]);
+  // 🎯 Create clean rounded max (next multiple of 10 or 50)
+  const niceMax = useMemo(() => {
+    if (maxValue <= 10) return 10;
+    if (maxValue <= 50) return Math.ceil(maxValue / 10) * 10;
+    if (maxValue <= 200) return Math.ceil(maxValue / 20) * 20;
+    return Math.ceil(maxValue / 50) * 50;
+  }, [maxValue]);
+
+  // 🎯 Clean interval (4 lines)
+  const interval = niceMax / 4;
+
+  const chartData = {
+    labels: monthlyStats.map((item) => item.month),
+    datasets: [{ data: values }],
+  };
 
   return (
-    <View className="bg-[#F5F3F1] p-2 rounded-xl">
+    <View className="bg-[#F5F3F1] p-3 rounded-xl">
       <LineChart
         data={chartData}
-        width={screenWidth / 1.2} // fit nicely on screen
-        height={Dimensions.get("window").height * 0.18}
+        width={screenWidth / 1.2}
+        height={Dimensions.get("window").height * 0.2}
         fromZero
-        yAxisLabel=""
-        yAxisSuffix=""
-        yAxisInterval={1} // ensures even spacing
+        segments={4} // ✅ fixed safe number
+        yAxisInterval={1}
         chartConfig={{
-          backgroundGradientFrom: "#F3F3F3",
-          backgroundGradientTo: "#F3F3F3",
+          backgroundGradientFrom: "#F5F3F1",
+          backgroundGradientTo: "#F5F3F1",
+          decimalPlaces: 0, // ✅ removes decimals
           color: () => "#3B82F6",
+          labelColor: () => "#6B7280",
           strokeWidth: 3,
         }}
         bezier
         withDots
-        withInnerLines={false}
+        withInnerLines
         withOuterLines={false}
+        formatYLabel={(y) => `${Math.round(Number(y))}`} // ✅ clean labels
         style={{
-          borderRadius: 10,
+          borderRadius: 12,
         }}
-        segments={yAxisMax} // number of horizontal lines
-        // formatYLabel={(y) => `${Math.round(Number(y))}`} // clean y-axis labels
       />
     </View>
   );

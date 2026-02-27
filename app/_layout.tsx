@@ -11,7 +11,7 @@ import Toast from "react-native-toast-message";
 import { Provider } from "react-redux";
 import "../global.css";
 import "../i18n";
-import { LocationProvider } from "./context/LocationContext";
+import { LocationProvider } from "../src/context/LocationContext";
 WebBrowser.maybeCompleteAuthSession();
 export default function RootLayout() {
   const clerkKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;

@@ -1,15 +1,15 @@
+import Loading from "@/components/Reusable/Loading";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import React from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 interface HouseRenderProps {
   houses: any[];
@@ -194,21 +194,24 @@ const HouseRender = ({
    */
   if (!houses.length && !isLoading) {
     return (
-      <View
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          marginTop: 60,
-        }}
-      >
-        <LottieView
-          source={require("@/assets/Animations/NoResult.json")}
-          autoPlay
-          loop
-          style={{ width: 180, height: 180 }}
-        />
-        <Text style={{ fontWeight: "600" }}>No House Available</Text>
-      </View>
+      <>
+        {ListHeaderComponent}
+        <View
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: 60,
+          }}
+        >
+          <LottieView
+            source={require("@/assets/Animations/NoResult.json")}
+            autoPlay
+            loop
+            style={{ width: 180, height: 180 }}
+          />
+          <Text style={{ fontWeight: "600" }}>No House Available</Text>
+        </View>
+      </>
     );
   }
 
@@ -254,7 +257,7 @@ const HouseRender = ({
 
       {isLoading && (
         <View style={{ marginTop: 20 }}>
-          <ActivityIndicator size="large" />
+          <Loading />
         </View>
       )}
     </ScrollView>

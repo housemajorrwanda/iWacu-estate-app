@@ -61,6 +61,7 @@ export default function AddHouse() {
   const [customName, setCustomName] = useState("");
   const [customNumber, setCustomNumber] = useState("");
   const [customImage, setCustomImage] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const route = useRouter();
   const { data: categories, isLoading } = useGetCategoriesQuery();
   const { data: additionalFeatures, isLoading: featureLoading } =
@@ -105,17 +106,21 @@ export default function AddHouse() {
   const pickImages = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true, // ✅ multiple images
+      allowsMultipleSelection: true,
       allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      const images = result.assets.map((asset, index) => ({
-        uri: asset.uri,
-        name: `House Image ${index + 1} ${houseData?.agent?.name}`,
-        type: asset.mimeType || "image/jpeg",
-      }));
+      const images = result.assets.map((asset, index) => {
+        const fileExtension = asset.uri.split(".").pop() || "jpg";
+
+        return {
+          uri: asset.uri,
+          name: `house_${Date.now()}_${index}.${fileExtension}`,
+          type: asset.mimeType || `image/${fileExtension}`,
+        };
+      });
 
       setHouseData((prev) => ({
         ...prev,
@@ -270,50 +275,76 @@ export default function AddHouse() {
 
   const [uploadHouse, { isLoading: uploadLoading, isSuccess, isError, error }] =
     useUploadHouseMutation();
+  // Validate required fields before upload
+  const validateForm = () => {
+    if (!houseData.category) {
+      Toast.show({ type: "error", text1: "Please select a category" });
+      return false;
+    }
+
+    if (!houseData.thumbnail.uri) {
+      Toast.show({ type: "error", text1: "Please upload a thumbnail" });
+      return false;
+    }
+
+    if (!houseData.address.trim()) {
+      Toast.show({ type: "error", text1: "Address is required" });
+      return false;
+    }
+
+    if (!houseData.purpose) {
+      Toast.show({ type: "error", text1: "Please select purpose" });
+      return false;
+    }
+
+    if (!houseData.price || isNaN(Number(houseData.price))) {
+      Toast.show({ type: "error", text1: "Valid price is required" });
+      return false;
+    }
+
+    if (!houseData.agent.name.trim()) {
+      Toast.show({ type: "error", text1: "Agent name is required" });
+      return false;
+    }
+
+    if (!houseData.agent.status) {
+      Toast.show({ type: "error", text1: "Select agent status" });
+      return false;
+    }
+
+    if (!houseData.agent.phone.trim()) {
+      Toast.show({ type: "error", text1: "Agent phone is required" });
+      return false;
+    }
+
+    return true;
+  };
   // Creating FormData and uploading house
 
   const handleUpload = async () => {
+    if (!validateForm()) return; // 🚫 stop here if invalid
+
     try {
+      setLoading(true);
       const result = await uploadHouse(houseData).unwrap();
 
       Toast.show({
         type: "success",
         text1: "House uploaded successfully!",
       });
-      console.log("Upload result:", result);
-      setHouseData({
-        category: "",
-        address: "",
-        longitude: location?.longitude || 0,
-        latitude: location?.latitude || 0,
-        thumbnail: { uri: "", type: "", name: "" },
-        additionalFeatures: {},
-        additionalImages: [],
-        customFeatures: [],
-        proximity: [],
-        purpose: "",
-        price: "",
-        agent: {
-          name: "",
-          status: "",
-          id: "",
-          upi: "",
-          description: "",
-          phone: "",
-          otherphone: "",
-          photo: { uri: "", type: "", name: "" },
-        },
-      });
 
+      setLoading(false);
       route.push("/(tabs)/home");
     } catch (err: any) {
-      console.log(err);
+      console.log("Upload error:", JSON.stringify(err?.data, null, 2));
 
       Toast.show({
         type: "error",
         text1: "Upload failed",
-        text2: err?.data?.message || "Something went wrong",
+        text2: JSON.stringify(err?.data, null, 2) || "Please check your data",
       });
+
+      setLoading(false);
     }
   };
 
@@ -451,10 +482,13 @@ export default function AddHouse() {
 
   return (
     <KeyboardAvoidingView behavior="padding" className="flex-1 relative">
-      {uploadLoading && (
-        <View className="z-50">
-          <Spinner textContent="uploading house..." />
-        </View>
+      {loading && (
+        <Spinner
+          visible={loading}
+          textContent="Uploading house..."
+          textStyle={{ color: "#000" }}
+          overlayColor="rgba(255,255,255,0.7)"
+        />
       )}
       {/* Custom Feature Modal */}
       <Modal visible={showCustomModal} animationType="slide" transparent>
@@ -538,7 +572,7 @@ export default function AddHouse() {
                 setShowCustomModal(false);
               }}
               style={{
-                backgroundColor: "#4F46E5",
+                backgroundColor: "#000",
                 padding: 12,
                 borderRadius: 8,
               }}
@@ -1013,7 +1047,7 @@ export default function AddHouse() {
         <View className="w-[95%] mx-auto flex flex-col">
           <Text className="text-border font-bold text-lg">Proximity</Text>
           <View className="rounded-2xl  bg-[#F6F1F1] my-2 flex flex-col border border-border/30 p-2">
-            <View className="flex flex-row justify-between w-[100%] items-center">
+            <View className="flex flex-row justify-between w-[95%] items-center">
               <View className="rounded-full border border-border/30 bg-white items-center justify-center px-2 w-[40%] flex flex-row gap-x-2">
                 <LocationEdit />
                 <TextInput

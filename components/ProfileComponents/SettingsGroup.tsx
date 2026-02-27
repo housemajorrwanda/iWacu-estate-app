@@ -1,4 +1,7 @@
-import { useLocation } from "@/app/context/LocationContext";
+import { useLocation } from "@/src/context/LocationContext";
+import { registerForPushNotificationsAsync } from "@/src/Notification";
+import { url } from "@/url";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { Bell, Globe, MapPin, Shield, User } from "lucide-react-native";
 import { useState } from "react";
@@ -11,10 +14,22 @@ export default function SettingsGroup() {
   const { t } = useTranslation();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   // const [locationEnabled, setLocationEnabled] = useState(false);
-
+  const [loading, setIsLoading] = useState(false);
   const { locationEnabled, toggleLocation } = useLocation();
 
-  const handleNotificationToggle = (value: boolean) => {
+  const handleNotificationToggle = async (value: boolean) => {
+    setIsLoading(true);
+    const token = await registerForPushNotificationsAsync();
+    const userToken = await AsyncStorage.getItem("token");
+    await fetch(`${url}/api/auth/save-push-token/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({ push_token: token, value: value }),
+    });
+    setIsLoading(false);
     setNotificationsEnabled(value);
 
     // TODO: connect to push notification logic
@@ -26,6 +41,7 @@ export default function SettingsGroup() {
       <SettingRow
         icon={<Bell size={20} />}
         title="Notifications"
+        isLoading={loading}
         hasSwitch
         value={notificationsEnabled}
         onToggle={handleNotificationToggle}

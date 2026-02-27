@@ -24,6 +24,7 @@ export interface FeatureInterface {
 export interface HouseFeatureAssignment {
   id: string;
   available_number: string | null;
+  feature_data: FeatureInterface;
   images: string[];
   feature: FeatureInterface;
   custom_feature_name: string;

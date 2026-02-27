@@ -1,13 +1,14 @@
 import { db } from "@/app/config/firebase";
 import { height } from "@/components/global";
 import { useGetProfileQuery } from "@/redux/Slice/userSlice";
+
+// import { db } from "@/src/config/firebase";
 import { useRouter } from "expo-router";
 import {
   collection,
   onSnapshot,
-  orderBy,
   query,
-  where,
+  where
 } from "firebase/firestore";
 import { Search } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -75,7 +76,6 @@ const ChatListScreen = () => {
     const q = query(
       collection(db, "chats"),
       where("participantsIds", "array-contains", currentUserId),
-      orderBy("lastMessageTimestamp", "desc"),
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -151,7 +151,12 @@ const ChatListScreen = () => {
     return (
       <TouchableOpacity
         activeOpacity={0.85}
-        onPress={() =>
+        onPress={() => {
+          console.log("Navigating to chat with:", {
+            id: otherUser?.id || "",
+            name,
+            phone: otherUser?.phone || "",
+          });
           router.push({
             pathname: "/chats/[id]",
             params: {
@@ -159,8 +164,8 @@ const ChatListScreen = () => {
               name,
               phone: otherUser?.phone || "",
             },
-          })
-        }
+          });
+        }}
         className="flex-row items-center px-5 py-4 border-b border-gray-100"
       >
         <View className="w-14 h-14 rounded-full bg-blue-100 items-center justify-center mr-4">

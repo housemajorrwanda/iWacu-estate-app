@@ -48,6 +48,7 @@ export default function useSocialAuth() {
         if (!token) throw new Error("Failed to get Clerk session token");
 
         // 3️⃣ Send token to backend (validate / login)
+        // 3️⃣ Send token to backend (validate / login)
         const res = await fetch(`${url}/api/auth/clerk-login/`, {
           method: "POST",
           headers: {
@@ -56,10 +57,34 @@ export default function useSocialAuth() {
           },
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data?.detail || "Backend authentication failed");
+        console.log("Response status:", res.status);
+
+        let data: any = null;
+        let errorMessage = "Backend authentication failed";
+
+        const contentType = res.headers.get("content-type");
+        console.log("Response content-type:", contentType);
+
+        try {
+          if (contentType && contentType.includes("application/json")) {
+            data = await res.json();
+            console.log("Response JSON:", data);
+
+            if (!res.ok) {
+              errorMessage = data?.detail || JSON.stringify(data);
+              throw new Error(errorMessage);
+            }
+          } else {
+            const text = await res.text();
+            console.log("Non-JSON response:", text);
+            errorMessage = text || "Server returned non-JSON response";
+            throw new Error(errorMessage);
+          }
+        } catch (parseError) {
+          console.log("Parse error:", parseError);
+          throw new Error(errorMessage);
         }
+
         await AsyncStorage.setItem("token", data?.token);
         console.log("Backend auth success:", data);
 

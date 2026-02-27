@@ -48,7 +48,17 @@ export default function SingleHouse() {
   const [chooseProximity, setChooseProximity] = useState(false);
   const [choosenProximity, setChoosenProximity] =
     useState<proximityInterface | null>(null);
-
+  const handleBookHouse = () => {
+    router.push({
+      pathname: "/(tabs)/home/booking",
+      params: {
+        houseId: house?.id,
+        price: house?.price,
+        // currency: house?.currency,
+        // title: house?.title,
+      },
+    });
+  };
   if (isLoading)
     return (
       <View className="flex-1 justify-center items-center">
@@ -57,11 +67,18 @@ export default function SingleHouse() {
     );
 
   if (isError) return <Error />;
+  const houseImages = [...(house?.house_images || [])];
+  console.log("feature assignments", house?.feature_assignments);
 
-  const houseImages = [
-    ...(house?.house_images || []),
-    { images: house?.thumbnail },
-  ];
+  if (
+    house?.thumbnail &&
+    !houseImages.some((img) => img.images === house.thumbnail)
+  ) {
+    houseImages.push({
+      id: "thumbnail",
+      images: house.thumbnail,
+    });
+  }
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const slideSize = event.nativeEvent.layoutMeasurement.width;
@@ -91,26 +108,29 @@ export default function SingleHouse() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          {houseImages.map((item, index) => (
-            <ImageBackground
-              key={index}
-              source={{ uri: item?.images }}
-              style={{
-                width,
-                height: height * 0.55,
-              }}
-            >
-              <LinearGradient
-                colors={["transparent", "rgba(0,0,0,0.7)"]}
+          {houseImages.map((item, index) => {
+            console.log(item.images);
+            return (
+              <ImageBackground
+                key={index}
+                source={{ uri: item?.images }}
                 style={{
-                  position: "absolute",
-                  bottom: 0,
-                  width: "100%",
-                  height: 180,
+                  width,
+                  height: height * 0.55,
                 }}
-              />
-            </ImageBackground>
-          ))}
+              >
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.7)"]}
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    width: "100%",
+                    height: 180,
+                  }}
+                />
+              </ImageBackground>
+            );
+          })}
         </ScrollView>
 
         {/* Back Button */}
@@ -250,7 +270,8 @@ export default function SingleHouse() {
               }}
             >
               <TouchableOpacity
-                onPress={() => router.navigate("/(tabs)/home/booking")}
+                disabled={house?.is_booked}
+                onPress={() => handleBookHouse()}
                 className="bg-loading py-4 w-[100%] flex flex-col items-center justify-between rounded-full"
               >
                 <Text className="text-white font-bold text-lg">Book now</Text>

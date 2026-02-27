@@ -20,53 +20,58 @@ export default function Features({ features }: any) {
           rowGap: width * 0.02,
         }}
       >
-        {features?.map((feature: HouseFeatureAssignment, index: number) => (
-          <TouchableOpacity
-            key={index}
-            style={{
-              width: `${100 / 3 - 4}%`, // approx 30% width with space-between
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 9999,
-              paddingVertical: width * 0.02,
-              paddingHorizontal: width * 0.025,
-              gap: 8,
-            }}
-          >
-            {feature?.feature?.icon && (
-              <Image
-                source={{ uri: feature?.feature?.icon }}
-                style={{ width: width * 0.06, height: width * 0.06 }}
-                resizeMode="contain"
-              />
-            )}
-            <View
+        {features?.map((item: HouseFeatureAssignment) => {
+          const name =
+            item?.custom_feature_name || item?.feature_data?.name || "";
+
+          const icon = item?.feature_data?.icon;
+          const number = item?.available_number;
+
+          const hasName = !!name;
+          const hasIcon = !!icon;
+          const hasNumber = !!number;
+
+          return (
+            <TouchableOpacity
+              key={item?.id}
               style={{
+                width: `${100 / 3 - 4}%`,
                 flexDirection: "row",
                 alignItems: "center",
-                gap: 4,
-                width: "100%",
                 justifyContent: "space-between",
-                flexWrap: "wrap",
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 9999,
+                paddingVertical: width * 0.02,
+                paddingHorizontal: width * 0.025,
+                gap: 6,
               }}
             >
-              {feature?.custom_feature_name && (
-                <Text>{feature?.custom_feature_name}</Text>
+              {/* ✅ ICON */}
+              {hasIcon && (
+                <Image
+                  source={{ uri: icon }}
+                  style={{ width: width * 0.05, height: width * 0.05 }}
+                  resizeMode="contain"
+                />
               )}
-              {feature?.feature?.show_name_only && (
-                <Text>{feature?.feature?.name}</Text>
-              )}
-              {feature?.available_number && (
-                <Text className="text-bold text-base">
-                  {feature?.available_number}
+
+              {/* ✅ NAME */}
+              {hasName && !hasIcon && (
+                <Text numberOfLines={1} style={{ fontSize: 12 }}>
+                  {name}
                 </Text>
               )}
-            </View>
-          </TouchableOpacity>
-        ))}
+
+              {/* ✅ NUMBER */}
+              {hasNumber && (
+                <Text style={{ fontWeight: "bold", fontSize: 13 }}>
+                  {number}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );

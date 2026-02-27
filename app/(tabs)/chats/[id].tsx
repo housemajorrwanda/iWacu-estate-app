@@ -5,7 +5,7 @@ import MessageInput from "@/components/ChatComponent/MessageInput";
 import { TAB_BAR_HEIGHT } from "@/components/global";
 import { useGetProfileQuery } from "@/redux/Slice/userSlice";
 import * as Network from "expo-network";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 // import { setDoc } from "firebase/firestore";
 import {
   addDoc,
@@ -31,6 +31,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 const CLOUD_NAME = "dbxh7c6wk";
 const UPLOAD_PRESET = "housemajor";
@@ -75,6 +76,16 @@ const ChatScreen = () => {
   useEffect(() => {
     const createChat = async () => {
       if (!profileData?.id || !agentId) return;
+      if (profileData.id === agentId) {
+        Toast.show({
+          type: "error",
+          text1: "Invalid Chat",
+          text2: "You cannot chat with yourself.",
+        });
+        router.back();
+        console.log("Cannot chat with yourself");
+        return;
+      }
 
       const sortedIds =
         profileData.id < agentId
@@ -88,8 +99,20 @@ const ChatScreen = () => {
       if (!chatSnap.exists()) {
         await setDoc(chatRef, {
           participantsIds: sortedIds,
+          participants: [
+            {
+              id: profileData?.id || "",
+              name: profileData?.full_name || "User",
+              // phone: profileData?.phone || "",
+            },
+            {
+              id: agentId || "",
+              name: name || "Agent",
+              // phone: phone || "",
+            },
+          ],
           lastMessage: "",
-          lastMessageTime: serverTimestamp(),
+          lastMessageTimestamp: serverTimestamp(),
           unreadCount: {
             [profileData.id]: 0,
             [agentId]: 0,
@@ -308,7 +331,7 @@ const ChatScreen = () => {
 
       await updateDoc(doc(db, "chats", chatId), {
         lastMessage: imageUrl ? "📷 Image" : text,
-        lastMessageTime: serverTimestamp(),
+        lastMessageTimestamp: serverTimestamp(),
         [`unreadCount.${agentId}`]: increment(1),
         [`unreadCount.${profileData.id}`]: 0,
       });

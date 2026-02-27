@@ -14,6 +14,7 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
+// import { useRouter } from "expo-router";
 import {
   FlatList,
   Image,
@@ -26,8 +27,8 @@ import MapView, { Marker } from "react-native-maps";
 
 export default function NearBy() {
   const { data: houses, isLoading } = useGetHousesQuery({});
-  console.log(houses);
-
+  // console.log(houses);
+  // const router = useRouter();
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -101,10 +102,13 @@ export default function NearBy() {
     return (
       <View className="flex flex-row items-center rounded-full gap-x-2 mr-1 flex-wrap border border-border/50 py-1 px-2">
         {feature?.feature?.icon ? (
-          <Image source={{ uri: feature?.feature?.icon }} className="w-5 h-5" />
+          <Image
+            source={{ uri: feature?.feature_data?.icon }}
+            className="w-5 h-5"
+          />
         ) : (
           <Text className="text-xs">
-            {feature.custom_feature_name || feature?.feature?.name}
+            {feature.custom_feature_name || feature?.feature_data?.name}
           </Text>
         )}
         <Text>{feature?.available_number}</Text>
@@ -120,6 +124,7 @@ export default function NearBy() {
   }) => {
     return (
       <TouchableOpacity
+        onPress={() => router.navigate(`/(tabs)/home/${nearestHouse?.id}`)}
         style={{
           shadowColor: "#000",
           shadowOffset: { height: 10, width: 10 },
@@ -149,7 +154,10 @@ export default function NearBy() {
             <Text className="text-border text-sm">{nearestHouse?.address}</Text>
           </View>
           <FlatList
-            numColumns={3}
+            // numColumns={2}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="gap-2 flex flex-wrap flex-row"
             data={nearestHouse?.feature_assignments}
             renderItem={renderNearestHouseFeature}
           />

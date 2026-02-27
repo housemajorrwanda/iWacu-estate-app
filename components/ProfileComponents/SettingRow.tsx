@@ -1,5 +1,11 @@
 import { ChevronRight } from "lucide-react-native";
-import { Switch, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export const SettingRow = ({
   icon,
@@ -9,6 +15,7 @@ export const SettingRow = ({
   value,
   onToggle,
   onPress,
+  isLoading,
 }: any) => (
   <TouchableOpacity
     activeOpacity={0.7}
@@ -19,9 +26,11 @@ export const SettingRow = ({
       {icon}
       <Text className="text-base font-medium text-gray-800">{title}</Text>
     </View>
+    {isLoading && <ActivityIndicator size={18} color="#888" />}
+    {hasSwitch && !isLoading && (
+      <Switch value={value} onValueChange={onToggle} />
+    )}
 
-    {hasSwitch && <Switch value={value} onValueChange={onToggle} />}
-
-    {hasArrow && <ChevronRight size={18} color="#888" />}
+    {hasArrow && !isLoading && <ChevronRight size={18} color="#888" />}
   </TouchableOpacity>
 );
