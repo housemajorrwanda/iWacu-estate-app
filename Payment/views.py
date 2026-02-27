@@ -10,6 +10,11 @@ from .models import Payments,SavedNumbers
 from HouseManagement.models import House
 from rest_framework.generics import ListCreateAPIView
 from .serializer import SavedNumberSerializer 
+from django.views.decorators.csrf import csrf_exempt
+# from django.http import HttpResponse
+# import json
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 # paypack App Id=dacc5eb6-f60a-11f0-8c67-deadd43720af
 #paypack secret key= d522db6f4bddbd925890dcd30f068a8fda39a3ee5e6b4b0d3255bfef95601890afd80709
@@ -61,7 +66,8 @@ class PaymentView(APIView):
         headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': f'Bearer {access_token}'
+        'Authorization': f'Bearer {access_token}',
+        'X-Webhook-Mode':'development'
         }
 
         response = requests.request("POST", url, headers=headers, data=payload)
@@ -77,7 +83,7 @@ class PaymentView(APIView):
         )
         payment.save()
         try:
-            SavedNumbers.objects.create(
+            SavedNumbers.objects.get_or_create(
                 user=request.user,
                 phone_number=request.data.get('customer_phone')
             )
@@ -85,32 +91,68 @@ class PaymentView(APIView):
         except:
             pass
         return Response(response.json(), status=response.status_code)
+
+
+@csrf_exempt
 def webhook(request):
-    data = json.loads(request.body.decode('utf-8'))
-    print("Webhook data:", data)
-    event_id = data.get('event_id')
-    kind = data.get('kind')
-    transaction_data = data.get('data', {})
-    ref = transaction_data.get('ref')
-    status = transaction_data.get('status')
-    amount = transaction_data.get('amount')
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
     try:
-        payment = Payments.objects.get(ref=ref)
-        payment.payment_status=status
-        payment.save()
-        if status in ['successful', 'completed']:
-            payment.house.is_booked = True
-            payment.house.save()
-        # print(payment)
-    except Payments.DoesNotExist:
-        payment = Payments.objects.create(ref=ref, payment_status=status, amount=amount)
-        payment.save()
-    
-    return Response({"message": "Webhook received"})
+        data = json.loads(request.body.decode("utf-8"))
+        print("Webhook data:", data)
+
+        transaction = data.get("data", {})
+
+        ref = transaction.get("ref")
+        status_value = transaction.get("status")
+        amount = transaction.get("amount")
+
+        if not ref:
+            return JsonResponse({"message": "Missing ref"}, status=400)
+
+        try:
+            payment = Payments.objects.get(ref=ref)
+            payment.payment_status = status_value
+            payment.save()
+
+            if status_value in ["successful", "completed"]:
+                payment.house.is_booked = True
+                payment.house.save()
+
+        except Payments.DoesNotExist:
+            Payments.objects.create(
+                ref=ref,
+                payment_status=status_value,
+                amount=amount
+            )
+
+        return HttpResponse(status=200)
+
+    except Exception as e:
+        print("Webhook error:", str(e))
+        return HttpResponse(status=400)
 class CheckPaymentConfirmed(APIView):
+    base_url = "https://payments.paypack.rw/api"
+    def authentication_paypack(self,request):
+        url = f'{self.base_url}/auth/agents/authorize'
+        payload = json.dumps({
+        "client_id": settings.PAYPACK_ID,
+        "client_secret": settings.PAYPACK_SECRET_KEY
+        })
+        headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        # print(response.json())
+        return response.json()
     def post(self, request):
         reference_key = request.data.get('reference_key')
-
+        phone_number=request.data.get('phone_number')
+        auth_response = self.authentication_paypack(request)
+        access_token = auth_response.get('access')
         if not reference_key:
             return Response(
                 {"message": "Reference key is required."},
@@ -118,9 +160,39 @@ class CheckPaymentConfirmed(APIView):
             )
 
         try:
+            # import requests
+
+            url = f'{self.base_url}/events/transactions?ref={reference_key}&kind=CASHIN&client={phone_number}'
+
+            payload={}
+            headers = {
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {access_token}'
+            }
+
+            response = requests.request("GET", url, headers=headers, data=payload)
+
+            print("text format",response.text)
+            print("json format",response.json())
+            response_data = response.json()
+
+            try:
+                status_value = response_data["transactions"][0]["data"]["status"]
+            except (KeyError, IndexError, TypeError):
+                return Response(
+                    {"message": "Invalid Paypack response"},
+                    status=400
+                )
+
             payment = Payments.objects.get(ref=reference_key)
-            print("payment status",payment.payment_status)
-            if payment.payment_status == 'completed' or payment.payment_status == 'successful':
+            if status_value and status_value != "pending" and payment.payment_status != status_value:
+                payment.payment_status = status_value
+                payment.save()
+            
+                print("payment status",payment.payment_status)
+            if status_value in ["successful", "completed"]:
+                payment.house.is_booked = True
+                payment.house.save()
                 return Response(
                     {"message": "Payment successful.", "completed": True,"status":"success"},
                     status=status.HTTP_200_OK

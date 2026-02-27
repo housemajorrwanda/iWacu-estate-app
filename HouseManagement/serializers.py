@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.http import QueryDict
 import re
 from collections import defaultdict
+from Profile.sendpushnotification import sendToAllUser
+from Profile.models import CustomUser
 from .models import (
     House, HouseCategory, AdditionalFeatures, HouseFeatureAssignment,
     HouseFeatureImage, HouseImages, Proximity, Agent
@@ -184,7 +186,7 @@ class HouseSerializer(serializers.ModelSerializer):
                     house=house,
                     images=image_file
                 )
-
+        sendToAllUser("New House Just Uploaded","Check out new house on Iwacu real Estate Mobile App")
         # Reload the house instance to include all related fields
         house.refresh_from_db()
         return house

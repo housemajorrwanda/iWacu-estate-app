@@ -44,7 +44,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     profile_picture = models.ImageField(upload_to='User_Profile/', null=True, blank=True)
     national_id = models.CharField(max_length=17, null=True, blank=True)
     account_type = models.CharField(max_length=15, choices=ACCOUNT_TYPE_CHOICES)
-    
+    push_token = models.CharField(max_length=255, blank=True, null=True)
+    recieve_notification=models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)

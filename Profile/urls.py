@@ -8,6 +8,8 @@ urlpatterns = [
     path("clerk-login/", ClerkLoginView.as_view()),
 
     path('profile/', ProfileView.as_view(), name='get_profile'),
+    path('save-push-token/', ProfileView.as_view(), name='get_profile'),
+    
     path('forgot-password/',forgot_password),
     
 ]

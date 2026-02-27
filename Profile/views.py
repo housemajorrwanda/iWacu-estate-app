@@ -219,3 +219,11 @@ class ProfileView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+class SavePushTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request.user.push_token = request.data.get("push_token")
+        request.user.recieve_notification=request.data.get("value")
+        request.user.save()
+        return Response({"status": "Token saved"})
