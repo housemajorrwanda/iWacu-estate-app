@@ -171,7 +171,7 @@ const HouseRender = ({
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 20,
-                backdropFilter: "blur(10px)",
+                // backdropFilter: "blur(10px)",
               }}
             >
               <Text
